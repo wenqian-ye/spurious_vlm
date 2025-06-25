@@ -1,3 +1,5 @@
+# Mitigating Spurious Correlations in Zero-Shot Multimodal Models
+
 ## Installation
 
 ### Requirements

@@ -17,7 +17,7 @@ text_prompts = {
         'object': 'bird',
         'target': 'waterbird',
         'prompt_template': 'a bird with ',
-        'labels_pure': ['landbirds', 'waterbirds'], 
+        'labels_pure': ['landbird', 'waterbird'], 
         'labels': ['an image of landbird', 'an image of waterbird'],
         'forbidden_key': None,
         'forbidden_words': None

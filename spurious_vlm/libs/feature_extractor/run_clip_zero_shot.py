@@ -19,6 +19,8 @@ import utils.sys_const as sys_const
 from torch.nn import DataParallel
 from PIL import Image
 
+
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def get_model(model_name):
@@ -92,11 +94,14 @@ def extract_image_features(dataset_name, model_name, root_dir='', args=None, bat
     filepaths = MultiEnvDataset().get_file_paths(dataset_name)
     metadata_raw = MultiEnvDataset().get_raw_metadata(dataset_name).detach().cpu().numpy()
     y_raw = MultiEnvDataset().get_raw_y(dataset_name).detach().cpu().numpy()
-    
-    image_embeddings_all = []
-    y_all = []
-    metadata_all = []
+
+    filepaths_train = MultiEnvDataset().get_file_paths(dataset_name, split="train")
+    metadata_raw_train = MultiEnvDataset().get_raw_metadata(dataset_name, split="train").detach().cpu().numpy()
+    y_raw_train = MultiEnvDataset().get_raw_y(dataset_name, split="train").detach().cpu().numpy()
+
+
     dataloader = _create_dataloader(filepaths, y_raw, metadata_raw, clip_processor)
+    dataloader_train = _create_dataloader(filepaths_train, y_raw_train, metadata_raw_train, clip_processor)
 
 
     image_embeddings_all = []
@@ -105,8 +110,6 @@ def extract_image_features(dataset_name, model_name, root_dir='', args=None, bat
     for j, labeled_batch in tqdm(enumerate(dataloader)):
         x, y, metadata = labeled_batch
         metadata = metadata.detach().cpu().numpy()
-       
-
         with torch.no_grad():
             img_embedding = model(x.to("cuda:0"))
             
@@ -114,16 +117,39 @@ def extract_image_features(dataset_name, model_name, root_dir='', args=None, bat
         metadata_all.append(metadata)
         y = y.detach().cpu().numpy().tolist()
         y_all.extend(y)
-    
-    
     image_embeddings_all = np.concatenate(image_embeddings_all)
     metadata_all = np.concatenate(metadata_all)
     y_all = np.array(y_all)
+
+
+    image_embeddings_all_train = []
+    y_all_train = []
+    metadata_all_train = []
+    for j, labeled_batch in tqdm(enumerate(dataloader_train)):
+        x, y, metadata = labeled_batch
+        metadata = metadata.detach().cpu().numpy()
+        with torch.no_grad():
+            img_embedding = model(x.to("cuda:0"))         
+        image_embeddings_all_train.append(img_embedding.detach().cpu().numpy())
+        metadata_all_train.append(metadata)
+        y = y.detach().cpu().numpy().tolist()
+        y_all_train.extend(y)
+    
+    
+    image_embeddings_all_train = np.concatenate(image_embeddings_all_train)
+    metadata_all_train = np.concatenate(metadata_all_train)
+    y_all_train = np.array(y_all_train)
 
     np.save(os.path.join(store_dir, 'image_emb.npy'), image_embeddings_all)
     if len(labeled_batch) == 3:
         np.save(os.path.join(store_dir, 'metadata.npy'), metadata_all)
     np.save(os.path.join(store_dir, 'y.npy'), y_all)
+
+    np.save(os.path.join(store_dir, 'image_emb_train.npy'), image_embeddings_all_train)
+    if len(labeled_batch) == 3:
+        np.save(os.path.join(store_dir, 'metadata_train.npy'), metadata_all_train)
+    np.save(os.path.join(store_dir, 'y_train.npy'), y_all_train)
+
     print(f"features and metadata saved to {store_dir}")
 
 

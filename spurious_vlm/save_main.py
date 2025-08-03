@@ -4,6 +4,7 @@ import os
 import argparse
 
 import numpy as np
+import csv
 import torch
 
 from wilds import get_dataset
@@ -18,6 +19,8 @@ import utils.sys_const as sys_const
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score
 from save_methods import *
+
+import pandas as pd
 
 def eval_wilds(preds, test_Y):
     if not torch.is_tensor(test_Y):
@@ -116,7 +119,7 @@ def evaluate(dataset_name, preds, test_Y, logits):
         const.VLCS_NAME: eval_domainbed,
         const.CXR_NAME: eval_cxr,
     }
-    if dataset_name not in [const.CXR_NAME, const.PACS_NAME, const.VLCS_NAME]:
+    if dataset_name not in [const.CXR_NAME, const.PACS_NAME, const.VLCS_NAME, const.ISIC_NAME]:
         return eval_func[dataset_name](preds, test_Y)
     else:
         return eval_func[dataset_name](preds, test_Y, logits)
@@ -141,9 +144,6 @@ if __name__ == '__main__':
             if len(args.device) > device_count:
                 raise ValueError(f"Specified {len(args.device)} devices, but only {device_count} devices found.")
     args.use_data_parallel = len(args.device) > 1
-
-
-
     
     dataset_name = args.dataset
     clip_model = args.clip_model
@@ -152,11 +152,13 @@ if __name__ == '__main__':
     assert clip_model in const.SUPPORTED_CLIP
     assert llm_model in const.SUPPORTED_LM
 
+
     labels = text_prompts[dataset_name]['labels_pure'] # get pure labels instead of labels inserted into predefined templates
+    # print(labels)
+
     max_tokens = 100
     n_paraphrases = 0
     
-    labels_text = MultiEnvDataset().dataset_dict[dataset_name]().get_labels() #e.g., person with dark hair, a landbird
     load_dir = os.path.join(sys_const.DATA_DIR, f'features/{dataset_name}/{clip_model}')
 
     cached_features = False
@@ -172,12 +174,15 @@ if __name__ == '__main__':
             openclip_extractor(dataset_name, clip_model, sys_const.DATA_DIR, args)
     
     print(f'CLIP MODEL = {clip_model}')
-    test_X = np.load(os.path.join(load_dir, 'image_emb.npy'))
+    test_X = np.load(os.path.join(load_dir, 'image_emb.npy'))  #5794,768
     test_Y = np.load(os.path.join(load_dir, 'y.npy'))
-
+    train_X = np.load(os.path.join(load_dir, 'image_emb_train.npy'))  #5794,768
+    train_Y = np.load(os.path.join(load_dir, 'y_train.npy'))
 
     
-    dataloader = get_embed_loader(test_X, test_Y)
+    dataloader = get_embed_loader(test_X, test_Y,batch_size=512)
+    dataloader_train = get_embed_loader(train_X, train_Y, batch_size=512)
+
 
     if args.algorithm == 'base':
         algorithm = ZeroShotClassifier(labels, clip_model, args)
@@ -191,8 +196,16 @@ if __name__ == '__main__':
         algorithm =  ZeroShotClassifierEnsemble(labels, clip_model, args)
         logit_all, pred_all = algorithm.predict(dataloader)
         result_str = evaluate(dataset_name, pred_all, test_Y, logit_all)
-    elif args.algorithm == "save":
-        algorithm = DiffPrompts(labels, clip_model, args)
+        eles = result_str.strip().split('\n')
+    elif args.algorithm == "random":
+        algorithm = RandomClassifier(labels, clip_model, args)
+        logit_all, pred_all = algorithm.predict(dataloader)
+        result_str = evaluate(dataset_name, pred_all, test_Y, logit_all)
+        eles = result_str.strip().split('\n')
+        with open(f"ours_{args.dataset}_models_random.txt", "a") as f:
+            f.write(f"K = {args.K} | {labels[0]}, {labels[1]} | {args.clip_model} {eles[0]} {eles[-1]}\n")
+    elif args.algorithm == "sage":
+        algorithm = SAGE(labels, clip_model, args)
         logit_all, pred_all = algorithm.predict(dataloader)
         result_str = evaluate(dataset_name, pred_all, test_Y, logit_all)
         eles = result_str.strip().split('\n')

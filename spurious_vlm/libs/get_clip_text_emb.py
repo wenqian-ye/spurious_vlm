@@ -18,7 +18,7 @@ from transformers.utils import logging
 from torch.nn import DataParallel
 logging.set_verbosity(40)
 
-torch.cuda.set_device(1)
+torch.cuda.set_device(0)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # CLIP image - text model
@@ -117,6 +117,9 @@ def get_text_embedding(prompts, model):
         else:
             tokens = model.tokenize(prompts, "cuda:0")
         text_emb_all = model(tokens)
+
         text_emb_all = text_emb_all / torch.norm(text_emb_all, dim=-1, keepdim=True)
         text_emb_all = text_emb_all.detach().cpu().numpy()
     return text_emb_all.squeeze()
+
+    # return text_emb_all

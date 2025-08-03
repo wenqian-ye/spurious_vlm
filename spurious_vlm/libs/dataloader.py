@@ -10,7 +10,8 @@ from wilds import get_dataset
 from wilds.common.data_loaders import get_train_loader, get_eval_loader
 
 import os
-
+from sklearn.model_selection import train_test_split
+from torchvision import transforms as tfms
 import numpy as np
 from PIL import Image, ImageFile
 
@@ -113,6 +114,93 @@ class CelebADataset:
     
     def get_group_prompts(self):
         return ["female with dark hair", "male with dark hair", "female with blond hair", "male with blond hair"]
+
+class COVIDDataset:
+    def get_file_paths(self, split="test"):
+        root_dir=f'{DATA_DIR}/covid-chestxray-dataset'
+        if split == 'train':
+            train_csv_path = f'{root_dir}/trap-sets/isic_annotated_train1.csv'
+            df = pd.read_csv(train_csv_path)
+        else:
+            test_csv_path = f'{root_dir}/trap-sets/isic_annotated_test1.csv'
+            df = pd.read_csv(test_csv_path)
+
+        file_name = df['image'].tolist()
+        file_paths = [f'/p/spurious/spurious_vlm/datasets/isic/ISIC2018_Task1-2_Training_Input/{fname}' for fname in file_name]
+
+        return file_paths
+    
+    def get_raw_metadata(self, split="test"):
+        columns = ['dark_corner', 'hair', 'gel_border', 'gel_bubble', 'ruler', 'ink', 'patches', 'vasc']
+        root_dir=f'{DATA_DIR}/isic'
+        if split == "train":
+            csv_path = f'{root_dir}/trap-sets/isic_annotated_train1.csv'
+        elif split == "test":
+            csv_path = f'{root_dir}/trap-sets/isic_annotated_test1.csv'
+        df = pd.read_csv(csv_path)
+        metadata = df[columns].values  # shape: [N, 8]
+        metadata_tensor = torch.tensor(metadata, dtype=torch.float32)
+        return metadata_tensor
+    
+    def get_raw_y(self, split="test"):
+        columns = ['label']
+        root_dir=f'{DATA_DIR}/isic'
+        if split == "train":
+            csv_path = f'{root_dir}/trap-sets/isic_annotated_train1.csv'
+        elif split == "test":
+            csv_path = f'{root_dir}/trap-sets/isic_annotated_test1.csv'
+        df = pd.read_csv(csv_path)
+        label = df[columns].values  # shape: [N, 8]
+        label_tensor = torch.tensor(label, dtype=torch.float32)
+        return label_tensor
+    
+    def get_labels(self):
+        return ['benign','malignant']
+
+class ISICDataset:
+    def get_file_paths(self, split="test"):
+        root_dir=f'{DATA_DIR}/isic'
+        if split == 'train':
+            train_csv_path = f'{root_dir}/trap-sets/isic_annotated_train1.csv'
+            df = pd.read_csv(train_csv_path)
+        else:
+            test_csv_path = f'{root_dir}/trap-sets/isic_annotated_test1.csv'
+            df = pd.read_csv(test_csv_path)
+
+        file_name = df['image'].tolist()
+        file_paths = [f'/p/spurious/spurious_vlm/datasets/isic/ISIC2018_Task1-2_Training_Input/{fname}' for fname in file_name]
+
+        return file_paths
+    
+    def get_raw_metadata(self, split="test"):
+        # columns = ['dark_corner', 'hair', 'gel_border', 'gel_bubble', 'ruler', 'ink', 'patches', 'vasc']
+        columns = ['patches']
+        root_dir=f'{DATA_DIR}/isic'
+        if split == "train":
+            csv_path = f'{root_dir}/trap-sets/isic_annotated_train1.csv'
+        elif split == "test":
+            csv_path = f'{root_dir}/trap-sets/isic_annotated_test1.csv'
+        df = pd.read_csv(csv_path)
+        metadata = df[columns].values  # shape: [N, 8]
+        metadata_tensor = torch.tensor(metadata, dtype=torch.float32)
+        return metadata_tensor
+    
+    def get_raw_y(self, split="test"):
+        columns = ['label']
+        root_dir=f'{DATA_DIR}/isic'
+        if split == "train":
+            csv_path = f'{root_dir}/trap-sets/isic_annotated_train1.csv'
+        elif split == "test":
+            csv_path = f'{root_dir}/trap-sets/isic_annotated_test1.csv'
+        df = pd.read_csv(csv_path)
+        label = df[columns].values  # shape: [N, 8]
+        label_tensor = torch.tensor(label, dtype=torch.float32)
+        return label_tensor
+    
+    def get_labels(self):
+        return ['benign','malignant']
+
+    
 
 class CivilCommentsDataset:
     def get_dataloaders(self, batch_size, transform=None, return_test=True):
@@ -331,6 +419,8 @@ class CXR14Dataset:
     def get_labels(self):
         return ['non-pneumothorax','pneumothorax']
 
+
+
 class VLCSDataset:
     def __init__(self):
         self.class_to_idx = {
@@ -502,6 +592,8 @@ class MultiEnvDataset:
             const.AMAZON_NAME: AmazonDataset,
             const.GENDER_BIAS_NAME: GenderBiasDataset,
             const.VLCS_NAME: VLCSDataset,
+            const.ISIC_NAME: ISICDataset,
+            const.COVID_NAME: COVIDDataset
         }
     
     def get_dataloaders(self, dataset_name, batch_size, return_test=True):

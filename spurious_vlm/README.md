@@ -1,4 +1,4 @@
-# Self-Adaptive Prompt Exploration
+# SAGE: Spuriousness-Aware Guided Prompt Exploration
 
 
 ### Downloading datasets: ###
@@ -13,9 +13,8 @@
 
 ### Running the code
 ```bash
-python save_main.py -d=waterbirds -clip openclip_vitl14 --algorithm save --K 1
+python save_main.py -d=waterbirds -clip openclip_vitl14 --algorithm sage 
 ```
 Flags:
 - `-d`: select dataset (waterbirds/celebA/pacs/vlcs)
 - `-clip`: select CLIP model (align/alt/openclip_vitl14/openclip_vitb32/openclip_vith14)
-- `--K`: set the number of prompts used for each class. Set `K=80` to run SAVE-All

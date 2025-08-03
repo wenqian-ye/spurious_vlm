@@ -7,6 +7,10 @@ from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 import random
 import numpy as np
+from torch.utils.data import random_split, DataLoader
+
+import open_clip
+from torch.nn import CosineSimilarity
 
 
 class EmbedDataset(Dataset):
@@ -249,7 +253,6 @@ class SimpleWorstPrompts:
         return logit_all, pred_all
     
 
-
 class DiffPrompts:
     def __init__(self, classnames, clip_model, args):
         text_encoder = construct_text_encoder(clip_model, args)
@@ -287,4 +290,101 @@ class DiffPrompts:
             pred_all.append(preds)
         logit_all = torch.cat(logit_all).detach().cpu().numpy()
         pred_all = torch.cat(pred_all).detach().cpu().numpy() 
+        return logit_all, pred_all
+
+class RandomClassifier:
+    def __init__(self, classnames, clip_model, args):
+        self.classnames = classnames
+        self.templates = TEMPLATES.imagenet_templates
+        self.text_encoder = construct_text_encoder(clip_model, args)
+        self.K = args.K  # you can tune this value
+        self.counts = None
+
+    def process_batch(self, image_features):
+        image_features = image_features / torch.norm(image_features, dim=-1, keepdim=True)
+        B, D = image_features.shape
+        T = len(self.templates)
+        C = len(self.classnames)
+
+        all_prompts = [t.format(c) for t in self.templates for c in self.classnames] #T*C
+        all_text_embeddings = torch.tensor(get_text_embedding(all_prompts, self.text_encoder))
+        text_embeds = all_text_embeddings.view(T,C,D)
+
+        topk_indices = torch.randint(low=0, high=80, size=(B, self.K))  # [B, K]
+        
+        text_embeds = text_embeds.permute(1, 0, 2)  # [C, T, D]
+        final_text_embeddings = torch.zeros(B, C, self.K, D)
+        for b in range(B):
+            indices = topk_indices[b] # [K]
+            final_text_embeddings[b] = text_embeds[:, indices, :]  # [K, D]
+
+        text_embeds = final_text_embeddings.mean(dim=2)
+        text_embeds = text_embeds / torch.norm(text_embeds, dim=2, keepdim=True)
+        image_features = image_features.unsqueeze(1) 
+        logits = (image_features * text_embeds).sum(dim=-1)
+
+        return logits
+
+
+    def predict(self, dataloader):
+        logit_all = []
+        pred_all = []
+        for x, y in tqdm(dataloader):
+            logits = self.process_batch(x)
+            preds = torch.argmax(logits, dim=-1)
+            logit_all.append(logits)
+            pred_all.append(preds)
+        logit_all = torch.cat(logit_all).detach().cpu().numpy()
+        pred_all = torch.cat(pred_all).detach().cpu().numpy()
+        return logit_all, pred_all
+
+class SAGE:
+    def __init__(self, classnames, clip_model, args):
+        self.classnames = classnames
+        self.templates = TEMPLATES.imagenet_templates
+        self.text_encoder = construct_text_encoder(clip_model, args)
+        self.K = args.K  # you can tune this value
+        self.counts = None
+
+    def process_batch(self, image_features):
+        image_features = image_features / torch.norm(image_features, dim=-1, keepdim=True)
+        B, D = image_features.shape
+        T = len(self.templates)
+        C = len(self.classnames)
+
+        all_prompts = [t.format(c) for t in self.templates for c in self.classnames] #T*C
+        all_text_embeddings = torch.tensor(get_text_embedding(all_prompts, self.text_encoder))
+        text_embeds = all_text_embeddings.view(T,C,D)
+
+        image_features_exp = image_features.unsqueeze(1).unsqueeze(2)  # [B, 1, 1, D]
+        text_embeds_exp = text_embeds.unsqueeze(0)  # [1, T, C, D]
+        sim = F.cosine_similarity(image_features_exp, text_embeds_exp, dim=-1)  # [B, T, C]
+
+        diff = sim.max(dim=2).values - sim.min(dim=2).values  # [B, T]
+        topk_diff, topk_indices = torch.topk(diff, k=self.K, dim=1)
+        
+        text_embeds = text_embeds.permute(1, 0, 2)  # [C, T, D]
+        final_text_embeddings = torch.zeros(B, C, self.K, D)
+        for b in range(B):
+            indices = topk_indices[b] # [K]
+            final_text_embeddings[b] = text_embeds[:, indices, :]  # [K, D]
+
+        text_embeds = final_text_embeddings.mean(dim=2)
+        text_embeds = text_embeds / torch.norm(text_embeds, dim=2, keepdim=True)
+        image_features = image_features.unsqueeze(1) 
+        logits = (image_features * text_embeds).sum(dim=-1)
+
+        return logits
+
+
+    def predict(self, dataloader):
+        logit_all = []
+        pred_all = []
+        for x, y in tqdm(dataloader):
+            logits = self.process_batch(x)
+            preds = torch.argmax(logits, dim=-1)
+            logit_all.append(logits)
+            pred_all.append(preds)
+        logit_all = torch.cat(logit_all).detach().cpu().numpy()
+        pred_all = torch.cat(pred_all).detach().cpu().numpy()
         return logit_all, pred_all

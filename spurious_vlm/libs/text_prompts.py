@@ -17,7 +17,7 @@ text_prompts = {
         'object': 'bird',
         'target': 'waterbird',
         'prompt_template': 'a bird with ',
-        'labels_pure': ['landbirds', 'waterbirds'],
+        'labels_pure': ['landbirds', 'waterbirds'], 
         'labels': ['an image of landbird', 'an image of waterbird'],
         'forbidden_key': None,
         'forbidden_words': None
@@ -36,8 +36,8 @@ text_prompts = {
         'object': 'hair',
         'target': 'hair color',
         'prompt_template': 'a person with',
-        # 'labels_pure': ['non-blond', 'blond'],
-        'labels_pure': ['a portrait with dark color hair', 'a portrait with blonde color hair'],
+        # 'labels_pure': ['non-blond', 'blond'], 
+        'labels_pure': ['a portrait with dark color hair', 'a portrait with blonde color hair'], 
         'labels': ['person with dark hair', 'person with blond hair'],
         'forbidden_key': 'hair color',
         'forbidden_words': ['blonde hair', 'dark hair']
@@ -66,13 +66,11 @@ text_prompts = {
         # 'question': 'List the difference in visual characteristics of dog, elephant, giraffe and a person. Then, list the similar visual characteristics of house and guitar. Give two keywords for each item. Separate each with a newline',
         'question': 'List the true defining characteristics of dog, elephant, giraffe, person, house and guitar. Give one answer for each. Separate each with a newline',
         'labels_pure': ['dog', 'elephant', 'giraffe', 'guitar', 'horse', 'house', 'person'],
-        # ['dog', 'elephant', 'giraffe', 'guitar', 'horse', 'house', 'person'],
         'labels': ['dog', 'elephant', 'giraffe', 'guitar', 'horse', 'house', 'person'],
         'forbidden_key': None,
         'prompt_template': '',
         'forbidden_key': None,
         'forbidden_words': None,
-        # ['dog', 'elephant', 'giraffe', 'guitar', 'horse', 'house', 'person'],
     },
     const.VLCS_NAME: {
         'qeustion_openLM_accept': [
@@ -95,13 +93,11 @@ text_prompts = {
         # 'question': 'List the difference in visual characteristics of dog, elephant, giraffe and a person. Then, list the similar visual characteristics of house and guitar. Give two keywords for each item. Separate each with a newline',
         'question': 'List the wrong characteristics of bird, car, chair, dog, person. Give one answer for each item. Separate each with a newline.',
         'labels_pure': ['bird', 'car', 'chair', 'dog', 'person'],
-        # ['bird', 'car', 'chair', 'dog', 'person'],
         'labels': ['bird', 'car', 'chair', 'dog', 'person'],
         'forbidden_key': None,
         'prompt_template': '',
         'forbidden_key': None,
         'forbidden_words': None
-        # ['bird', 'car', 'chair', 'dog', 'person'],
     },
     const.CXR_NAME: {
         'question': 'List the core differences between chest X-ray of person with pneumothorax and without pneumothorax. Give short keywords for each item. Answer in the following format: <Difference>: <pneumothorax characteristic> ; <no pneumothorax characteristic>',
@@ -110,4 +106,10 @@ text_prompts = {
         'forbidden_key': [],
         'prompt_template': '',
     },
+    const.ISIC_NAME:{
+        'labels_pure': ['benign lesion', 'malignant lesion'],
+    },
+    const.COVID_NAME:{
+        'labels_pure': ['chest without Pneumonia', 'chest with Pneumonia'],
+    }
 }

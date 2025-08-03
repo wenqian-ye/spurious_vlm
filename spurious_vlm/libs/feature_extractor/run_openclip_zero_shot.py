@@ -75,9 +75,9 @@ def extract_image_features(dataset_name, model_name, root_dir='', args=None, bat
             model = DataParallel(model)
         model.to("cuda:0")
     if root_dir:
-        store_dir = os.path.join(root_dir, f'features/{dataset_name}/{model_name}-{args.suffix}')
+        store_dir = os.path.join(root_dir, f'features/{dataset_name}/{model_name}')
     else:
-        store_dir = f'features/{dataset_name}/{model_name}-{args.suffix}'
+        store_dir = f'features/{dataset_name}/{model_name}'
     if not os.path.isdir(store_dir):
         os.makedirs(store_dir)
 

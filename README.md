@@ -1,10 +1,9 @@
 # SAGE: Spuriousness-Aware Guided Prompt Exploration
-[Paper PDF](https://arxiv.org/pdf/2511.13005)
+This repository contains the code implementation of AAAI 2026 paper: **SAGE: Spuriousness-Aware Guided Prompt Exploration for Mitigating Multimodal Bias** ([Paper PDF](https://arxiv.org/pdf/2511.13005)).
 
-### Downloading datasets: ###
+### Datasets: ###
 - WILDS datasets (Waterbirds, CelebA): The code enables automatic download of WILDS datasets (thanks to the amazing [WILDS benchmark package](https://wilds.stanford.edu/)!). No extra steps needed here!
 - DomainBed datasets (PACS, VLCS): Download the datasets from [DomainBed suit](https://github.com/facebookresearch/DomainBed)
-
 
 
 ### Configure 

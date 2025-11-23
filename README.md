@@ -19,6 +19,8 @@ Flags:
 - `-d`: select dataset (waterbirds/celebA/pacs/vlcs)
 - `-clip`: select CLIP model (align/alt/openclip_vitl14/openclip_vitb32/openclip_vith14)
 
+### Acknowledgement
+This codebase is built upon the [RoboShot](https://github.com/SprocketLab/roboshot) codebase. We thank the original authors for making it publicly available.
 
 If you find this work useful, please cite:
 

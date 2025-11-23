@@ -83,6 +83,28 @@ def eval_cxr(y_pred, y_true, logits):
     result_str = f"{msg1}\n{msg2}"
     return result_str
 
+def eval_animal(y_pred, y_true, logits):
+    if torch.is_tensor(logits):
+        logits = logits.detach().cpu().numpy()
+    if torch.is_tensor(y_pred):
+        y_pred = y_pred.detach().cpu().numpy()
+    if torch.is_tensor(y_true):
+        y_true = y_true.detach().cpu().numpy()
+    acc_all = []
+    for y in np.unique(y_true):
+        class_sample_idx = np.argwhere(y_true==y)
+        group_acc = accuracy_score(y_true[class_sample_idx], y_pred[class_sample_idx])
+        acc_all.append(group_acc)
+        print(y, len(class_sample_idx))
+    acc_all = np.array(acc_all)
+    msg1 = f'avg acc = {np.mean(acc_all):.3f}'
+    msg2 = f'wg acc = {np.amin(acc_all):.3f}'
+    print(msg1)
+    print(msg2)
+    print('\n')
+    result_str = f"{msg1}\n{msg2}"
+    return result_str
+
 def make_clip_preds(image_features, text_features):
     if not torch.is_tensor(image_features):
         image_features = torch.Tensor(image_features)
@@ -118,8 +140,9 @@ def evaluate(dataset_name, preds, test_Y, logits):
         const.PACS_NAME: eval_domainbed,
         const.VLCS_NAME: eval_domainbed,
         const.CXR_NAME: eval_cxr,
+        const.ANIMAL_NAME: eval_animal
     }
-    if dataset_name not in [const.CXR_NAME, const.PACS_NAME, const.VLCS_NAME, const.ISIC_NAME]:
+    if dataset_name not in [const.CXR_NAME, const.PACS_NAME, const.VLCS_NAME, const.ISIC_NAME, const.ANIMAL_NAME]:
         return eval_func[dataset_name](preds, test_Y)
     else:
         return eval_func[dataset_name](preds, test_Y, logits)
@@ -190,8 +213,8 @@ if __name__ == '__main__':
         avg_ent = ent_all.mean()
         result_str = evaluate(dataset_name, pred_all, test_Y, logit_all)
         eles = result_str.strip().split('\n')
-        with open(f"base_{args.dataset}_{args.clip_model}_templates.txt", "a") as f:
-            f.write(f"{algorithm.template} {eles[0]} {eles[-1]} ent: {avg_ent:.6f}\n")
+        with open(f"base_{args.dataset}_models.txt", "a") as f:
+            f.write(f"K = {args.K} | {labels[0]}, {labels[1]} | {args.clip_model} {eles[0]} {eles[-1]}\n")
     elif args.algorithm == "base_ensemble":
         algorithm =  ZeroShotClassifierEnsemble(labels, clip_model, args)
         logit_all, pred_all = algorithm.predict(dataloader)

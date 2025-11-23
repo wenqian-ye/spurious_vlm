@@ -17,7 +17,7 @@ text_prompts = {
         'object': 'bird',
         'target': 'waterbird',
         'prompt_template': 'a bird with ',
-        'labels_pure': ['landbird', 'waterbird'], 
+        'labels_pure': ['landbirds', 'waterbirds'], 
         'labels': ['an image of landbird', 'an image of waterbird'],
         'forbidden_key': None,
         'forbidden_words': None
@@ -111,5 +111,10 @@ text_prompts = {
     },
     const.COVID_NAME:{
         'labels_pure': ['chest without Pneumonia', 'chest with Pneumonia'],
+    },
+    const.ANIMAL_NAME:{
+        'question_openLM_reject':[["This animal usually ", "A typical behavior of this animal is "], ["This animal often ", "A common activity for this animal is "]],
+        'question_openLM_accept':[['A defining characteristic of this animal is: ', 'A unique feature of this animal is: '],],
+        'labels_pure': [' brambling, Fringilla montifringilla', ' black swan, Cygnus atratus', ' echidna, spiny anteater, anteater', ' black stork, Ciconia nigra', ' flamingo', ' bittern', ' pelican', ' sea lion', ' bulbul', ' water ouzel, dipper', ' Vulture', ' African hunting dog, hyena dog, Cape hunting dog, Lycaon pictus', ' hyena, hyaena', ' red fox, Vulpes vulpes', ' Arctic fox, white fox, Alopex lagopus', ' jaguar, panther, Panthera onca, Felis onca', ' lion, king of beasts, Panthera leo', ' cheetah, chetah, Acinonyx jubatus', ' ice bear, polar bear, Ursus Maritimus, Thalarctos maritimus', ' bullfrog, Rana catesbeiana', ' dung beetle', ' cicada, cicala', ' loggerhead, loggerhead turtle, Caretta caretta', ' beaver', ' bighorn, bighorn sheep, cimarron', ' mink', ' otter', ' box turtle, box tortoise', ' common iguana, iguana, Iguana iguana', ' whiptail, whiptail lizard', ' agama', ' African crocodile, Nile crocodile, Crocodylus niloticus', ' hognose snake, puff adder, sand viper', ' king snake, kingsnake', ' garter snake, grass snake', ' water snake', ' harvestman, daddy longlegs, Phalangium opilio', ' scorpion', ' tarantula', ' centipede', ' black grouse', ' ptarmigan', ' prairie chicken, prairie grouse, prairie fowl', ' sulphur-crested cockatoo, Kakatoe galerita, Cacatua galerita', ' ostrich, Struthio camelus'],
     }
 }

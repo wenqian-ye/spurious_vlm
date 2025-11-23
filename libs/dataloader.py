@@ -577,7 +577,170 @@ class ColoredMNISTDataset:
         test_env = np.random.choice(envs)
         dataset = FolderDataset(os.path.join(root_dir, test_env), transform=transform)
         return [DataLoader(dataset, batch_size=batch_size, shuffle=True)]
+
+
+class AnimalFolderDataset(Dataset):
+    """
+    Dataset for Animal (Counter Animal) dataset.
+
+    Assumes the directory structure:
+        root_dir/
+            class_1/
+                common_XXX/
+                counter_XXX/
+            class_2/
+                common_XXX/
+                counter_XXX/
+            ...
+    """
+
+    def __init__(self, root_dir, transform=None):
+        self.root_dir = root_dir
+        self.transform = transform
+        self.image_paths = []
+        self.labels = []
+        self.envs = []
+
+        class_names = sorted(os.listdir(root_dir))
+        self.class_to_idx = {c: i for i, c in enumerate(class_names)}
+        self.env_to_idx = {'common': 0, 'counter': 1}
+
+        for class_name in class_names:
+            class_dir = os.path.join(root_dir, class_name)
+            if not os.path.isdir(class_dir):
+                continue
+
+            subfolders = sorted(os.listdir(class_dir))
+            for subfolder in subfolders:
+                env_type = None
+                if subfolder.lower().startswith('common'):
+                    env_type = 'common'
+                elif subfolder.lower().startswith('counter'):
+                    env_type = 'counter'
+                else:
+                    continue  
+
+                env_idx = self.env_to_idx[env_type]
+                subfolder_dir = os.path.join(class_dir, subfolder)
+                for img_file in os.listdir(subfolder_dir):
+                    img_path = os.path.join(subfolder_dir, img_file)
+                    if os.path.isfile(img_path):
+                        self.image_paths.append(img_path)
+                        self.labels.append(self.class_to_idx[class_name])
+                        self.envs.append(env_idx)
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def __getitem__(self, idx):
+        image_path = self.image_paths[idx]
+        label = self.labels[idx]
+        env = self.envs[idx]
+
+        image = Image.open(image_path).convert('RGB')
+        if self.transform:
+            image = self.transform(image)
+
+        return image, label, env
+
+
+class AnimalDataset:
+    def __init__(self):
+        self.root_dir = f'{DATA_DIR}/LAION-final'
+        self.envs = ['common', 'counter']
+
+    def get_dataloaders(self, batch_size, transform=None, return_test=True):
+        dataset_all = []
+        class_names = sorted(os.listdir(self.root_dir))
+        for class_name in class_names:
+            class_dir = os.path.join(self.root_dir, class_name)
+            if not os.path.isdir(class_dir):
+                continue
+            dataset = AnimalFolderDataset(class_dir, transform=transform)
+            dataset_all.append(dataset)
+
+        from torch.utils.data import ConcatDataset
+        full_dataset = ConcatDataset(dataset_all)
+        return [DataLoader(full_dataset, batch_size=batch_size, shuffle=True)]
+
+    def get_labels(self):
+        class_names = sorted(os.listdir(self.root_dir))
+        return [f'this is a {c_}' for c_ in class_names]
+
+    def get_file_paths(self, split='test'):
+        paths = []
+        class_names = sorted(os.listdir(self.root_dir))
+        for class_name in class_names:
+            class_dir = os.path.join(self.root_dir, class_name)
+            if not os.path.isdir(class_dir):
+                continue
+            subfolders = sorted(os.listdir(class_dir))
+            for subfolder in subfolders:
+                subfolder_dir = os.path.join(class_dir, subfolder)
+                for img_file in os.listdir(subfolder_dir):
+                    img_path = os.path.join(subfolder_dir, img_file)
+                    if os.path.isfile(img_path):
+                        paths.append(img_path)
+        return paths
+
+    def get_raw_metadata(self, split='test'):
+        metadata = []
+        class_names = sorted(os.listdir(self.root_dir))
+        class_to_idx = {c: i for i, c in enumerate(class_names)}
+        env_to_idx = {'common': 0, 'counter': 1}
+
+        for class_name in class_names:
+            class_dir = os.path.join(self.root_dir, class_name)
+            if not os.path.isdir(class_dir):
+                continue
+
+            subfolders = sorted(os.listdir(class_dir))
+            for subfolder in subfolders:
+                env_type = None
+                if subfolder.lower().startswith('common'):
+                    env_type = 'common'
+                elif subfolder.lower().startswith('counter'):
+                    env_type = 'counter'
+                else:
+                    continue
+
+                env_idx = env_to_idx[env_type]
+                class_idx = class_to_idx[class_name]
+                split_idx = 0  
+
+                subfolder_dir = os.path.join(class_dir, subfolder)
+                for img_file in os.listdir(subfolder_dir):
+                    if os.path.isfile(os.path.join(subfolder_dir, img_file)):
+                        metadata.append([class_idx, env_idx, split_idx])
+
+        return torch.tensor(metadata, dtype=torch.float32)
+
+    def get_raw_y(self, split='test'):
+        labels = []
+        class_names = sorted(os.listdir(self.root_dir))
+        class_to_idx = {c: i for i, c in enumerate(class_names)}
+        for class_name in class_names:
+            class_dir = os.path.join(self.root_dir, class_name)
+            if not os.path.isdir(class_dir):
+                continue
+            subfolders = sorted(os.listdir(class_dir))
+            for subfolder in subfolders:
+                subfolder_dir = os.path.join(class_dir, subfolder)
+                for img_file in os.listdir(subfolder_dir):
+                    if os.path.isfile(os.path.join(subfolder_dir, img_file)):
+                        labels.append(class_to_idx[class_name])
+        import torch
+        return torch.tensor(labels, dtype=torch.float32)
+
+    def get_group_prompts(self):
+        class_names = sorted(os.listdir(self.root_dir))
+        group_prompts = []
+        for c in class_names:
+            for env in self.envs:
+                group_prompts.append(f'{c} in {env} environment')
+        return group_prompts
     
+
 class MultiEnvDataset:
     def __init__(self):
         self.transform = transforms.Compose(
@@ -593,7 +756,8 @@ class MultiEnvDataset:
             const.GENDER_BIAS_NAME: GenderBiasDataset,
             const.VLCS_NAME: VLCSDataset,
             const.ISIC_NAME: ISICDataset,
-            const.COVID_NAME: COVIDDataset
+            const.COVID_NAME: COVIDDataset,
+            const.ANIMAL_NAME: AnimalDataset,
         }
     
     def get_dataloaders(self, dataset_name, batch_size, return_test=True):
@@ -616,4 +780,5 @@ class MultiEnvDataset:
         return self.dataset_dict[dataset_name]().get_group_prompts()
     
 if __name__ == '__main__':
-    loader = MultiEnvDataset().get_dataloaders(const.AMAZON_NAME, 16)
+    # loader = MultiEnvDataset().get_dataloaders(const.AMAZON_NAME, 16)
+    metadata = MultiEnvDataset().get_raw_metadata(const.ANIMAL_NAME)

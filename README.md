@@ -25,7 +25,7 @@ If you find this work useful, please cite:
 
 ```bibtex
 @inproceedings{ye2026sage,
-  title={SAGE: Spuriousness-Aware Guided Prompt Exploration},
+  title={SAGE: Spuriousness-Aware Guided Prompt Exploration for Mitigating Multimodal Bias},
   author={Ye, Wenqian and Wang, Di and Zheng, Guangtao and Liu, Bohan and Zhang, Aidong},
   booktitle={Proceedings of the AAAI Conference on Artificial Intelligence},
   year={2026}
